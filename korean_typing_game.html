@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한글 타자 게임 - 韩语打字竞速</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 95%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .screen {
+            display: none;
+            padding: 40px;
+            min-height: 400px;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1.1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .game-area {
+            position: relative;
+            height: 500px;
+            background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .falling-word {
+            position: absolute;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+            animation: fall linear;
+        }
+
+        @keyframes fall {
+            from {
+                top: -60px;
+            }
+            to {
+                top: 500px;
+            }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .stat-box {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-box .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .game-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.3em;
+            border: 3px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .game-input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .leaderboard {
+            margin-top: 30px;
+        }
+
+        .leaderboard h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .leaderboard-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .leaderboard-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank-medal {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+
+        .game-over-stats {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .game-over-stats .big-score {
+            font-size: 4em;
+            color: #667eea;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .game-over-stats .stat-row {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+        }
+
+        .game-over-stats .stat-item {
+            text-align: center;
+        }
+
+        .game-over-stats .stat-item .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .game-over-stats .stat-item .value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+
+        .center-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇰🇷 한글 타자 게임</h1>
+            <p>韩语打字竞速挑战</p>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active">
+            <div class="input-group">
+                <label for="nicknameInput">닉네임 (昵称):</label>
+                <input type="text" id="nicknameInput" placeholder="请输入您的昵称" maxlength="20">
+            </div>
+            <div class="center-buttons">
+                <button class="btn" onclick="startGame()">게임 시작 🚀</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="label">점수 (分数)</div>
+                    <div class="value" id="scoreDisplay">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">CPM (每分钟字符数)</div>
+                    <div class="value" id="cpmDisplay">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">시간 (时间)</div>
+                    <div class="value" id="timeDisplay">0</div>
+                </div>
+            </div>
+            <div class="game-area" id="gameArea"></div>
+            <input type="text" id="gameInput" class="game-input" placeholder="단어를 입력하세요..." autocomplete="off">
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen">
+            <div class="game-over-stats">
+                <h2>게임 종료! 🎉</h2>
+                <div class="big-score" id="finalScore">0</div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <div class="label">평균 CPM</div>
+                        <div class="value" id="finalCPM">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="label">플레이 시간</div>
+                        <div class="value" id="finalTime">0s</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="leaderboard">
+                <h3>🏆 실시간 순위표</h3>
+                <div id="leaderboardContent" class="loading">순위표를 불러오는 중...</div>
+            </div>
+
+            <div class="center-buttons">
+                <button class="btn btn-secondary" onclick="showStartScreen()">처음으로</button>
+                <button class="btn" onclick="startGame()">다시 시작</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase configuration - 请填入您的配置
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 韩语单词库 (TOPIK 初级/中级词汇)
+        const koreanWords = [
+            // 初级词汇
+            '안녕하세요', '감사합니다', '사랑', '친구', '가족', '학교', '선생님',
+            '학생', '책', '컴퓨터', '전화', '시간', '오늘', '내일', '어제',
+            '아침', '점심', '저녁', '밥', '물', '커피', '음식', '집', '방',
+            '문', '창문', '의자', '책상', '침대', '옷', '신발', '모자',
+            // 中级词汇
+            '생각하다', '이해하다', '공부하다', '일하다', '만나다', '보내다',
+            '받다', '주다', '먹다', '마시다', '자다', '일어나다', '가다',
+            '오다', '사다', '팔다', '읽다', '쓰다', '듣다', '말하다',
+            '좋아하다', '싫어하다', '사랑하다', '행복하다', '슬프다', '기쁘다',
+            '화나다', '아프다', '피곤하다', '바쁘다', '한가하다', '재미있다',
+            '어렵다', '쉽다', '크다', '작다', '많다', '적다', '비싸다', '싸다'
+        ];
+
+        let nickname = '';
+        let score = 0;
+        let totalCharacters = 0;
+        let gameStartTime = 0;
+        let gameInterval;
+        let cpmInterval;
+        let fallingWords = [];
+        let wordSpeed = 8000; // 初始速度（毫秒）
+        let isComposing = false;
+
+        window.startGame = function() {
+            const nicknameInput = document.getElementById('nicknameInput');
+            nickname = nicknameInput.value.trim();
+            
+            if (!nickname) {
+                alert('닉네임을 입력해주세요! (请输入昵称)');
+                return;
+            }
+
+            // 初始化游戏状态
+            score = 0;
+            totalCharacters = 0;
+            gameStartTime = Date.now();
+            fallingWords = [];
+            wordSpeed = 8000;
+            
+            // 显示游戏画面
+            showScreen('gameScreen');
+            
+            // 清空输入框和游戏区域
+            document.getElementById('gameInput').value = '';
+            document.getElementById('gameArea').innerHTML = '';
+            
+            // 更新显示
+            updateDisplay();
+            
+            // 启动游戏循环
+            gameInterval = setInterval(spawnWord, 2000);
+            cpmInterval = setInterval(updateCPM, 1000);
+            
+            // 聚焦输入框
+            document.getElementById('gameInput').focus();
+        };
+
+        function spawnWord() {
+            const word = koreanWords[Math.floor(Math.random() * koreanWords.length)];
+            const gameArea = document.getElementById('gameArea');
+            const wordElement = document.createElement('div');
+            
+            wordElement.className = 'falling-word';
+            wordElement.textContent = word;
+            wordElement.dataset.word = word;
+            wordElement.style.left = Math.random() * (gameArea.offsetWidth - 150) + 'px';
+            wordElement.style.animationDuration = wordSpeed + 'ms';
+            
+            gameArea.appendChild(wordElement);
+            fallingWords.push(wordElement);
+            
+            // 监听动画结束（单词落地）
+            wordElement.addEventListener('animationend', () => {
+                if (wordElement.parentNode) {
+                    wordElement.remove();
+                    fallingWords = fallingWords.filter(w => w !== wordElement);
+                    // 游戏结束
+                    endGame();
+                }
+            });
+            
+            // 逐渐加速
+            if (wordSpeed > 3000) {
+                wordSpeed -= 100;
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('scoreDisplay').textContent = score;
+            const timeElapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+            document.getElementById('timeDisplay').textContent = timeElapsed;
+        }
+
+        function updateCPM() {
+            updateDisplay();
+            const timeElapsedMinutes = (Date.now() - gameStartTime) / 60000;
+            const cpm = timeElapsedMinutes > 0 ? Math.round(totalCharacters / timeElapsedMinutes) : 0;
+            document.getElementById('cpmDisplay').textContent = cpm;
+        }
+
+        // 输入处理
+        const gameInput = document.getElementById('gameInput');
+        
+        gameInput.addEventListener('compositionstart', () => {
+            isComposing = true;
+        });
+        
+        gameInput.addEventListener('compositionend', (e) => {
+            isComposing = false;
+            checkWord(e.target.value);
+        });
+        
+        gameInput.addEventListener('input', (e) => {
+            if (!isComposing) {
+                checkWord(e.target.value);
+            }
+        });
+
+        function checkWord(inputValue) {
+            const trimmedInput = inputValue.trim();
+            
+            if (trimmedInput === '') return;
+            
+            for (let i = 0; i < fallingWords.length; i++) {
+                const wordElement = fallingWords[i];
+                if (wordElement.dataset.word === trimmedInput) {
+                    // 正确匹配
+                    score += trimmedInput.length * 10;
+                    totalCharacters += trimmedInput.length;
+                    
+                    // 移除单词
+                    wordElement.remove();
+                    fallingWords.splice(i, 1);
+                    
+                    // 清空输入框
+                    document.getElementById('gameInput').value = '';
+                    
+                    // 更新显示
+                    updateDisplay();
+                    
+                    break;
+                }
+            }
+        }
+
+        function endGame() {
+            // 停止游戏循环
+            clearInterval(gameInterval);
+            clearInterval(cpmInterval);
+            
+            // 清除所有下落的单词
+            fallingWords.forEach(word => word.remove());
+            fallingWords = [];
+            
+            // 计算最终统计
+            const timeElapsedMinutes = (Date.now() - gameStartTime) / 60000;
+            const finalCPM = timeElapsedMinutes > 0 ? Math.round(totalCharacters / timeElapsedMinutes) : 0;
+            const timeElapsedSeconds = Math.floor((Date.now() - gameStartTime) / 1000);
+            
+            // 显示最终分数
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalCPM').textContent = finalCPM;
+            document.getElementById('finalTime').textContent = timeElapsedSeconds + 's';
+            
+            // 上传到 Firebase 并显示排行榜
+            uploadScore(nickname, score, finalCPM, timeElapsedSeconds);
+            
+            // 显示游戏结束画面
+            showScreen('gameOverScreen');
+        }
+
+        async function uploadScore(name, playerScore, cpm, time) {
+            try {
+                // 检查 Firebase 配置
+                if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    console.warn("Firebase 未配置，使用本地排行榜");
+                    showLocalLeaderboard(name, playerScore, cpm);
+                    return;
+                }
+
+                // Firebase 上传逻辑（需要导入 Firebase SDK）
+               // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBugX3pLMfncr8UsgdByzcgquURnoPIZNY",
+  authDomain: "korean-typing-game-56208.firebaseapp.com",
+  databaseURL: "https://korean-typing-game-56208-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "korean-typing-game-56208",
+  storageBucket: "korean-typing-game-56208.firebasestorage.app",
+  messagingSenderId: "228939245144",
+  appId: "1:228939245144:web:89454f7a8807a924054c2d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+                // 上传分数
+                const scoresRef = ref(db, 'scores');
+                await push(scoresRef, {
+                    nickname: name,
+                    score: playerScore,
+                    cpm: cpm,
+                    time: time,
+                    date: new Date().toISOString()
+                });
+                
+                // 获取排行榜
+                const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+                const snapshot = await get(topScoresQuery);
+                
+                const leaderboard = [];
+                snapshot.forEach((childSnapshot) => {
+                    leaderboard.push(childSnapshot.val());
+                });
+                
+                leaderboard.reverse(); // 从高到低排序
+                displayLeaderboard(leaderboard);
+                
+            } catch (error) {
+                console.error('Firebase error:', error);
+                showLocalLeaderboard(name, playerScore, cpm);
+            }
+        }
+
+        function showLocalLeaderboard(name, playerScore, cpm) {
+            // 本地存储排行榜
+            let leaderboard = JSON.parse(localStorage.getItem('koreanTypingLeaderboard') || '[]');
+            
+            leaderboard.push({
+                nickname: name,
+                score: playerScore,
+                cpm: cpm,
+                date: new Date().toISOString()
+            });
+            
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            
+            localStorage.setItem('koreanTypingLeaderboard', JSON.stringify(leaderboard));
+            displayLeaderboard(leaderboard);
+        }
+
+        function displayLeaderboard(leaderboard) {
+            const content = document.getElementById('leaderboardContent');
+            
+            if (!leaderboard || leaderboard.length === 0) {
+                content.innerHTML = '<p class="loading">아직 기록이 없습니다.</p>';
+                return;
+            }
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            
+            let html = '<table class="leaderboard-table"><thead><tr><th>순위</th><th>닉네임</th><th>점수</th><th>CPM</th><th>날짜</th></tr></thead><tbody>';
+            
+            leaderboard.forEach((entry, index) => {
+                const rank = index < 3 ? `<span class="rank-medal">${medals[index]}</span>${index + 1}` : index + 1;
+                const date = new Date(entry.date).toLocaleDateString('ko-KR');
+                
+                html += `<tr>
+                    <td>${rank}</td>
+                    <td>${entry.nickname}</td>
+                    <td>${entry.score}</td>
+                    <td>${entry.cpm}</td>
+                    <td>${date}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            content.innerHTML = html;
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        window.showStartScreen = function() {
+            showScreen('startScreen');
+        };
+
+        // Enter键快速开始
+        document.getElementById('nicknameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startGame();
+            }
+        });
+    </script>
+</body>
+</html>
